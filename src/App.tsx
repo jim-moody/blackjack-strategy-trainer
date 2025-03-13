@@ -229,7 +229,7 @@ function App() {
       showFeedback: false,
       showDealerCards: false,
     }));
-  }, [gameState.deck, gameState.aceMode]);
+  }, [gameState.aceMode]);
 
   const handleDecision = (decision: Decision) => {
     const correctDecision = getPerfectStrategyDecision(
