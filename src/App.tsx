@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from '@emotion/styled';
 import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
@@ -23,6 +23,13 @@ type GameState = {
   showFeedback: boolean;
   showDealerCards: boolean;
   aceMode: boolean;
+};
+
+// Helper function moved outside the loop
+const isBlackjack = (cards: Card[]) => {
+  const hasAce = cards.some(card => card.value === 'A');
+  const hasTen = cards.some(card => ['10', 'J', 'Q', 'K'].includes(card.value));
+  return hasAce && hasTen;
 };
 
 // Styled Components
@@ -174,43 +181,37 @@ function App() {
     aceMode: false,
   });
 
-  const startNewHand = () => {
-    let deck = gameState.deck.length < 10 ? createDeck() : gameState.deck;
+  const startNewHand = useCallback(() => {
+    let currentDeck = gameState.deck.length < 10 ? createDeck() : [...gameState.deck];
     let playerCards: Card[];
     let dealerCards: Card[];
-    
-    const isBlackjack = (cards: Card[]) => {
-      const hasAce = cards.some(card => card.value === 'A');
-      const hasTen = cards.some(card => ['10', 'J', 'Q', 'K'].includes(card.value));
-      return hasAce && hasTen;
-    };
 
     do {
       if (gameState.aceMode) {
         // Find an Ace in the deck
-        const aceIndex = deck.findIndex(card => card.value === 'A');
+        const aceIndex = currentDeck.findIndex(card => card.value === 'A');
         if (aceIndex === -1) {
-          deck = createDeck();
-          playerCards = [deck[0], deck[1]];
+          currentDeck = createDeck();
+          playerCards = [currentDeck[0], currentDeck[1]];
         } else {
           // Take the Ace and another random card
-          const ace = deck[aceIndex];
-          const otherCard = deck[(aceIndex + 1) % deck.length];
+          const ace = currentDeck[aceIndex];
+          const otherCard = currentDeck[(aceIndex + 1) % currentDeck.length];
           playerCards = [ace, otherCard];
           // Remove used cards from deck
-          deck = deck.filter((_, index) => index !== aceIndex && index !== (aceIndex + 1) % deck.length);
+          currentDeck = currentDeck.filter((_, index) => index !== aceIndex && index !== (aceIndex + 1) % currentDeck.length);
         }
       } else {
-        playerCards = [deck[0], deck[1]];
-        deck = deck.slice(2);
+        playerCards = [currentDeck[0], currentDeck[1]];
+        currentDeck = currentDeck.slice(2);
       }
 
-      dealerCards = [deck[0], deck[1]];
-      deck = deck.slice(2);
+      dealerCards = [currentDeck[0], currentDeck[1]];
+      currentDeck = currentDeck.slice(2);
 
       // If either hand is blackjack, try again
       if (isBlackjack(playerCards) || isBlackjack(dealerCards)) {
-        deck = createDeck();
+        currentDeck = createDeck();
       }
     } while (isBlackjack(playerCards) || isBlackjack(dealerCards));
 
@@ -218,13 +219,13 @@ function App() {
       ...prev,
       playerCards,
       dealerCards,
-      deck,
+      deck: currentDeck,
       lastDecision: undefined,
       lastCorrectDecision: undefined,
       showFeedback: false,
       showDealerCards: false,
     }));
-  };
+  }, [gameState.deck, gameState.aceMode]);
 
   const handleDecision = (decision: Decision) => {
     const correctDecision = getPerfectStrategyDecision(
@@ -251,7 +252,7 @@ function App() {
 
   useEffect(() => {
     startNewHand();
-  }, []);
+  }, [startNewHand]);
 
   return (
     <AppContainer>
