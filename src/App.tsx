@@ -6,7 +6,6 @@ import {
   Card,
   Decision,
   createDeck,
-  calculateHandValue,
   getPerfectStrategyDecision,
 } from './utils/blackjack';
 
@@ -25,11 +24,15 @@ type GameState = {
   aceMode: boolean;
 };
 
-// Helper function moved outside the loop
+// Helper functions moved outside the loop
 const isBlackjack = (cards: Card[]) => {
   const hasAce = cards.some(card => card.value === 'A');
   const hasTen = cards.some(card => ['10', 'J', 'Q', 'K'].includes(card.value));
   return hasAce && hasTen;
+};
+
+const removeCardsAtIndices = (deck: Card[], indices: number[]) => {
+  return deck.filter((_, index) => !indices.includes(index));
 };
 
 // Styled Components
@@ -198,8 +201,9 @@ function App() {
           const ace = currentDeck[aceIndex];
           const otherCard = currentDeck[(aceIndex + 1) % currentDeck.length];
           playerCards = [ace, otherCard];
-          // Remove used cards from deck
-          currentDeck = currentDeck.filter((_, index) => index !== aceIndex && index !== (aceIndex + 1) % currentDeck.length);
+          // Remove used cards from deck using the pure function
+          const indicesToRemove = [aceIndex, (aceIndex + 1) % currentDeck.length];
+          currentDeck = removeCardsAtIndices(currentDeck, indicesToRemove);
         }
       } else {
         playerCards = [currentDeck[0], currentDeck[1]];
