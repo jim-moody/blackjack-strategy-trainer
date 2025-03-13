@@ -229,6 +229,7 @@ function App() {
       showFeedback: false,
       showDealerCards: false,
     }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState.aceMode]);
 
   const handleDecision = (decision: Decision) => {
